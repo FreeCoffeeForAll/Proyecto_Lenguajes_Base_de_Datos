@@ -5,6 +5,14 @@
 	<link rel="stylesheet" href="{{url_for('static', filename = 'assets/bootstrap/css/bootstrap.min.css')}}">
 	<link rel="stylesheet" href="{{url_for('static', filename = 'assets/bootstrap/css/bootstrap-theme.min.css')}}">
 	<link rel="icon" href="{{url_for('static', filename = 'ico.png')}}">
+	<script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+	<script src="https://unpkg.com/bootstrap-table@1.21.0/dist/bootstrap-table.min.js"></script>
+	<style type="text/css">
+		.fixed-table-loading.table.table-bordered.table-hover {
+		  top: 73.8px;display: none;  
+		}
+		</style>
+
 </head>
 <body background="/static/image.jpg" style="background-repeat: no-repeat; background-size: cover;background-position: center; background-attachment: fixed;">
 	{% include 'includes/_navbar.html' %}

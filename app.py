@@ -1,7 +1,7 @@
 # from flask import Flask, render_template, flash, redirect, url_for, request, session, logging
 from flask import Flask, render_template, flash, redirect, url_for, request, session, logging
 import cx_Oracle
-
+import json
 # from js import console
 
 # from flask_mysqldb import MySQL
@@ -9,22 +9,23 @@ from wtforms import Form, StringField, TextAreaField, PasswordField, validators,
 # from wtforms.fields.html5 import DateField
 from passlib.hash import sha256_crypt
 # from flask_script import Manager
-# from functools import wraps
+from functools import wraps
 # from datetime import datetime
 
 
-import logging
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
-log.disabled = True
+# import logging
+# log = logging.getLogger('werkzeug')
+# log.setLevel(logging.ERROR)
+# log.disabled = True
 
 
 
 app = Flask(__name__)
-
-app.config['TESTING'] = True
-
-app.logger.disabled = True
+app.secret_key = "super secret key"
+app.run(debug=True)
+# app.config['TESTING'] = True
+# app.run(threaded=True)
+# app.logger.disabled = True
 
 
 try:
@@ -38,7 +39,6 @@ except  Exception as err:
 else:
     print('Conectado a Oracle', conexion.version)
 
-
 # app.config['MYSQL_HOST'] = 'localhost'
 # app.config['MYSQL_USER'] = 'root'
 # app.config['MYSQL_PASSWORD'] = 'eswar@259522'
@@ -47,15 +47,16 @@ else:
 
 # mysql = MySQL(app)
 
-# def is_logged_in(f):
-# 	@wraps(f)
-# 	def wrap(*args, **kwargs):
-# 		if 'logged_in' in session:
-# 			return f(*args, **kwargs)
-# 		else:
-# 			flash('Nice try, Tricks don\'t work, bud!! Please Login :)', 'danger')
-# 			return redirect(url_for('login'))
-# 	return wrap
+def is_logged_in(f):
+	@wraps(f)
+	def wrap(*args, **kwargs):
+		if 'logged_in' in session:
+			print('----------------INSESSION------------------------------')
+			return f(*args, **kwargs)
+		else:
+			flash('Nice try, Tricks don\'t work, bud!! Please Login :)', 'danger')
+			return redirect(url_for('login'))
+	return wrap
 
 # def is_trainor(f):
 # 	@wraps(f)
@@ -92,119 +93,291 @@ else:
 def index():
 	# print('Conectado a Oracle', conexion.version)
 
-	cur = conexion.cursor()
+	# cur = conexion.cursor()
+
+	# cur.close()
 
 	return render_template('home.html')
 
 
-@app.route('/clientes', methods = ['GET', 'POST'])
-def view_records():
+@app.route('/clientes', methods = ['GET', 'POST','DELETE','PUT'])
+def view_clientes():
 
-	form = AddEquipForm(request.form)
+	data=None
 
-	headings=('Cedula','Nombre','Primer Apellido','Segundo Apellido','Codigo Usuario','Numero Membresia','ID Rutina','Direccion','Correo Electronico')
+	if request.method == 'GET':
 
-	cur2 = conexion.cursor()
+		try:
+			cursor_view_users = conexion.cursor()
+			users=cursor_view_users.execute('SELECT * FROM CLIENTES')
+			data = users.fetchall()
+			print(data)
+			error=None
+			cursor_view_users.close()
+			return render_template('clientes.html', data=data,error=error)
 
-	try:
-		users=cur2.execute('SELECT * FROM CLIENTES')
-		data = users.fetchall()
-		print(data)
+		except  Exception as err:
+			print('error obteniendo empleados ',err)
+			data=('Error en el Query')
+			error = 'Error obteniendo empleados ',err
+			cursor_view_users.close()	
+			flash(error, 'error')
+			return redirect('/clientes')
+
+	if request.method == 'POST':
+		# name = form.name.data
+		# count = form.count.data
+
+		try:
+			cursor_cliente = conexion.cursor()
+			cursor_cliente.callproc('PK_Global.INSERTA_CLIENTES', [int(request.form.get("cedula")),request.form.get("nombre"),request.form.get("primer_apellido"),request.form.get("segundo_apellido"),int(request.form.get("membresia")),request.form.get("direccion"),request.form.get("correo")])
+			conexion.commit()
+			error=None
+			cursor_cliente.close()
+			flash('Cliente Agregado Exitosamente!!', 'success')
+			return redirect('/clientes')
+			# return render_template('clientes.html')
+
+		except  Exception as err:
+			error='Error Inyectando Cliente ',str(err)
+			flash(error, 'warning')
+			return redirect('/clientes')
+
+	if request.method == 'DELETE':
+		variables_from_web= request.get_json()
+		cursor_cliente = conexion.cursor()
+		cursor_cliente.callproc('PK_Global.BORRA_CLIENTE', [variables_from_web['cedula']])
+		conexion.commit()
 		error=None
-	except  Exception as err:
-		print('error obteniendo empleados ',err)
-		data=('Error en el Query')
-		error = err
+		cursor_cliente.close()
+		print("DELETE REQUEST COMPLETADO", str(variables_from_web))
+		return render_template('clientes.html')
 
-	if request.method == 'POST' and form.validate():
-		name = form.name.data
-		count = form.count.data
-		
-		# cur = mysql.connection.cursor()
-		# q = cur.execute("SELECT name FROM equip")
-		# equips = []
-		# b = cur.fetchall()
-		# for i in range(q):
-		# 	equips.append(b[i]['name'])
-		# if name in equips:
-		# 	cur.execute("UPDATE equip SET count = count+%s WHERE name = %s", (count, name))
-		# else:
-		# 	cur.execute("INSERT INTO equip(name, count) VALUES(%s, %s)", (name, count))
-		# mysql.connection.commit()
-		# cur.close()
-		# flash('You added a new Equipment!!', 'success')
-		# return redirect(url_for('adminDash'))
-	print('Conectado a Oracle', conexion.version)
-	return render_template('view_records.html', form = form,headings=headings,data=data,error=error)
+	if request.method == 'PUT':
+		variables_from_web= request.get_json()
+		print(variables_from_web)
+		cursor_cliente = conexion.cursor()
+		cursor_cliente.callproc('PK_Global.ACTUALIZA_CLIENTES', [int(variables_from_web["cedula"]),variables_from_web["nombre"],variables_from_web["primer_apellido"],variables_from_web["segundo_apellido"],int(variables_from_web["membresia"]),variables_from_web["direccion"],variables_from_web["correo"]])
+		conexion.commit()
+		error=None
+		cursor_cliente.close()
+		print("UPDATE REQUEST COMPLETADO", str(variables_from_web))
+		return render_template('clientes.html')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@app.route('/entrenadores', methods = ['GET', 'POST','DELETE','PUT'])
+def view_entrenadores():
+
+	data=None
+
+	if request.method == 'GET':
+
+		try:
+			cursor_view_users = conexion.cursor()
+			users=cursor_view_users.execute('SELECT * FROM ENTRENADORES')
+			data = users.fetchall()
+			print(data)
+			error=None
+			cursor_view_users.close()
+			return render_template('entrenadores.html', data=data,error=error)
+
+		except  Exception as err:
+			print('error obteniendo empleados ',err)
+			data=('Error en el Query')
+			error = 'Error obteniendo empleados ',err
+			cursor_view_users.close()	
+			flash(error, 'error')
+			return redirect('/entrenadores')
+
+	if request.method == 'POST':
+		# name = form.name.data
+		# count = form.count.data
+
+		try:
+			cursor_cliente = conexion.cursor()
+			cursor_cliente.callproc('PK_Global.INSERTA_ENTRENADORES', [int(request.form.get("cedula")),request.form.get("nombre"),request.form.get("primer_apellido"),request.form.get("segundo_apellido"),int(request.form.get("salario")),request.form.get("direccion"),request.form.get("correo")])
+			conexion.commit()
+			error=None
+			cursor_cliente.close()
+			flash('Entrenador Agregado Exitosamente!!', 'success')
+			return redirect('/entrenadores')
+			# return render_template('entrenadores.html')
+
+		except  Exception as err:
+			error='Error Inyectando Entrenador ',str(err)
+			flash(error, 'warning')
+			return redirect('/entrenadores')
+
+	if request.method == 'DELETE':
+		variables_from_web= request.get_json()
+		cursor_cliente = conexion.cursor()
+		cursor_cliente.callproc('PK_Global.BORRA_ENTRENADORES', [variables_from_web['cedula']])
+		conexion.commit()
+		error=None
+		cursor_cliente.close()
+		print("DELETE REQUEST COMPLETADO", str(variables_from_web))
+		return render_template('entrenadores.html')
+
+	if request.method == 'PUT':
+		variables_from_web= request.get_json()
+		print(variables_from_web)
+		cursor_cliente = conexion.cursor()
+		cursor_cliente.callproc('PK_Global.ACTUALIZA_ENTRENADORES', [int(variables_from_web["cedula"]),variables_from_web["nombre"],variables_from_web["primer_apellido"],variables_from_web["segundo_apellido"],int(variables_from_web["salario"]),variables_from_web["direccion"],variables_from_web["correo"]])
+		conexion.commit()
+		error=None
+		cursor_cliente.close()
+		print("UPDATE REQUEST COMPLETADO", str(variables_from_web))
+		return render_template('entrenadores.html')
+
+
+
+
+
+
+
+@app.route('/administradores', methods = ['GET', 'POST','DELETE','PUT'])
+def view_administradores():
+
+	data=None
+
+	if request.method == 'GET':
+
+		try:
+			cursor_view_users = conexion.cursor()
+			users=cursor_view_users.execute('SELECT * FROM ADMINISTRADORES')
+			data = users.fetchall()
+			print(data)
+			error=None
+			cursor_view_users.close()
+			return render_template('administradores.html', data=data,error=error)
+
+		except  Exception as err:
+			print('error obteniendo empleados ',err)
+			data=('Error en el Query')
+			error = 'Error obteniendo empleados ',err
+			cursor_view_users.close()	
+			flash(error, 'error')
+			return redirect('/administradores')
+
+	if request.method == 'POST':
+		# name = form.name.data
+		# count = form.count.data
+
+		try:
+			cursor_cliente = conexion.cursor()
+			cursor_cliente.callproc('PK_Global.INSERTA_ADMINISTRADORES', [int(request.form.get("cedula")),request.form.get("nombre"),request.form.get("primer_apellido"),request.form.get("segundo_apellido"),int(request.form.get("salario")),request.form.get("direccion"),request.form.get("correo")])
+			conexion.commit()
+			error=None
+			cursor_cliente.close()
+			flash('Administrador Agregado Exitosamente!!', 'success')
+			return redirect('/administradores')
+			# return render_template('administradores.html')
+
+		except  Exception as err:
+			error='Error Inyectando Administrador ',str(err)
+			flash(error, 'warning')
+			return redirect('/administradores')
+
+	if request.method == 'DELETE':
+		variables_from_web= request.get_json()
+		cursor_cliente = conexion.cursor()
+		cursor_cliente.callproc('PK_Global.BORRA_ADMINISTRADORES', [variables_from_web['cedula']])
+		conexion.commit()
+		error=None
+		cursor_cliente.close()
+		print("DELETE REQUEST COMPLETADO", str(variables_from_web))
+		return render_template('administradores.html')
+
+	if request.method == 'PUT':
+		variables_from_web= request.get_json()
+		print(variables_from_web)
+		cursor_cliente = conexion.cursor()
+		cursor_cliente.callproc('PK_Global.ACTUALIZA_ADMINISTRADORES', [int(variables_from_web["cedula"]),variables_from_web["nombre"],variables_from_web["primer_apellido"],variables_from_web["segundo_apellido"],int(variables_from_web["salario"]),variables_from_web["direccion"],variables_from_web["correo"]])
+		conexion.commit()
+		error=None
+		cursor_cliente.close()
+		print("UPDATE REQUEST COMPLETADO", str(variables_from_web))
+		return render_template('administradores.html')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
-	# print('Conectado a Oracle', conexion.version)
 
 	if request.method == 'POST':
-		# username = "'{}'" .format(request.form['username'])
-		username =request.form['username']
+		usuario_form =str(request.form['username'])
 		password_candidate = request.form['password']
-
-
 		cur1 = conexion.cursor()
 
-		# print(username,"tamano ",len(username),password_candidate)
 		try:
-			# query_test="SELECT * FROM USUARIO WHERE usuario LIKE :myField"
-			cur1.execute("SELECT * FROM USUARIOS WHERE usuario LIKE :mybv", mybv=username)
-			# query_test= "SELECT * FROM USUARIO WHERE usuario = 'Adolfo'"
-			# query_test= "SELECT * FROM USUARIO "
-			# print("QUERYYYY ",query_test)
-			# cur1.execute(query_test)
+			cur1.execute("SELECT * FROM USUARIOS WHERE usuario LIKE :mybv", mybv=usuario_form)
 			row = cur1.fetchone()
 			print ('ROWWWW = ',row)
+			cur1.close()
 		except  Exception as err:			
 			print ('Failed to select from EMP\n',err)
 
-		while True:	
 
-			if row is None:
-				print('No records found')
-				break
-			
-			print(row)
-			# data = cur1.fetchone()
-			# print('DATAAAAAAAAAAAAAAAAAAAA ',data)
-			password = row[2]
-			
-			if sha256_crypt.verify(password_candidate, password):
-				session['logged_in'] = True
-				session['username'] = username
-				session['prof'] = 3
-				#session['hash'] = sha256_crypt.encrypt(username)
-				flash('You are logged in', 'success')
-				if session['prof'] == 1:
-					return redirect(url_for('adminDash'))
-				if session['prof'] == 3:
-					return redirect(url_for('trainorDash'))
-				if session['prof'] == 2:
-					return redirect(url_for('recepDash'))
-				#s = 'memberDash/%s', (username)
-				return redirect(url_for('memberDash', username = username))
-			else:
-				error = 'Invalid login'
-				return render_template('login.html', error = error)
-
-		else:
-			error = 'Username NOT FOUND'
+		if row is None:
+			print('No records found')
+			error = 'Usuario no encontrado en la BD'
 			return render_template('login.html', error = error)
 
-		# result = cur.execute('SELECT * FROM usuario WHERE usuario =Adolfo')
+		password = row[2]
 
+		print('passs',password)
+		print('passs candidate',password_candidate)
+		if password_candidate == password:
+			session['logged_in'] = True
+			session['username'] = usuario_form
+			session['prof'] = 0
+			print('login success')
+			flash('You are logged in', 'success')
+			if session['prof'] == 1:
+				return redirect(url_for('adminDash'))
+			if session['prof'] == 3:
+				return redirect(url_for('trainorDash'))
 
-	# cursor=conexion.cursor();
+			return render_template('memberDash.html', user = usuario_form)
+		else:
+			error = 'Contrasena Incorrecta'
+			return render_template('login.html', error = error)
 
-	# # cursor.execute(p_calculadora(2,22,'*'));
-	# out_val = cursor.var(int)
-	# cursor.callproc('p_calculadora2', [2,22,'*',out_val])
-	# print(out_val)
 	return render_template('login.html')
+
+
+@app.route('/memberDash/<username>')
+@is_logged_in
+def memberDash(username):
+
+	return render_template('memberDash.html',user = username)
+	# return render_template('memberDash.html',user = username, plan = plan, scheme = scheme, progress = progress, good = good, poor = poor, average = average)
 
 
 # class ChangePasswordForm(Form):
@@ -258,10 +431,10 @@ def login():
 # 	phone = StringField('Phone', [validators.Length(min = 1, max = 100)])
 
 
-# @app.route('/addTrainor', methods = ['GET', 'POST'])
+@app.route('/addTrainor', methods = ['GET', 'POST'])
 # @is_logged_in
 # @is_admin
-# def addTrainor():
+def addTrainor():
 # 	values.clear()
 # 	cur = mysql.connection.cursor()
 # 	q = cur.execute("SELECT username FROM info")
@@ -291,7 +464,7 @@ def login():
 # 		cur.close()
 # 		flash('You recruited a new Trainor!!', 'success')
 # 		return redirect(url_for('adminDash'))
-# 	return render_template('addTrainor.html', form=form)
+	return render_template('addTrainor.html')
 
 
 
@@ -399,9 +572,9 @@ def login():
 # 	return render_template('deleteRecep.html', form = form)
 
 
-class AddEquipForm(Form):
-	nombre = StringField('Name', [validators.Length(min = 1, max = 100)])
-	apellido = IntegerField('Count', [validators.NumberRange(min = 1, max = 25)])
+# class AddEquipForm(Form):
+# 	nombre = StringField('Name', [validators.Length(min = 1, max = 100)])
+# 	apellido = IntegerField('Count', [validators.NumberRange(min = 1, max = 25)])
 
 
 # @app.route('/addEquip', methods = ['GET', 'POST'])
@@ -682,31 +855,31 @@ class AddEquipForm(Form):
 
 
 # @app.route('/memberDash/<string:username>')
-# @is_logged_in
+# # @is_logged_in
 # def memberDash(username):
-# 	if session['prof']==4 and username!=session['username']:
-# 		flash('You aren\'t authorised to view other\'s Dashboards', 'danger')
-# 		return redirect(url_for('memberDash', username = session['username'])) 
-# 	cur = mysql.connection.cursor()
-# 	cur.execute("SELECT plan FROM members WHERE username = %s", [username])
-# 	plan = (cur.fetchone())['plan']
-# 	cur.execute("SELECT exercise, reps, sets FROM plans WHERE name = %s", [plan])
-# 	scheme = cur.fetchall()
-# 	n = cur.execute("SELECT date, daily_result, rate FROM progress WHERE username = %s ORDER BY date DESC", [username])
-# 	progress = cur.fetchall()
-# 	result = []
-# 	for i in range(n):
-# 		result.append(int(progress[i]['rate']))
-# 	good = result.count(1)
-# 	poor = result.count(3)
-# 	average = result.count(2)
-# 	total = good + poor + average
-# 	good = round((good/total) * 100, 2)
-# 	average = round((average/total) * 100, 2)
-# 	poor = round((poor/total) * 100, 2)
-# 	cur.close()
-# 	return render_template('memberDash.html',user = username, plan = plan, scheme = scheme, progress = progress, good = good, poor = poor, average = average)
-
+	# if session['prof']==4 and username!=session['username']:
+	# 	flash('You aren\'t authorised to view other\'s Dashboards', 'danger')
+	# 	return redirect(url_for('memberDash', username = session['username'])) 
+	# cur = mysql.connection.cursor()
+	# cur.execute("SELECT plan FROM members WHERE username = %s", [username])
+	# plan = (cur.fetchone())['plan']
+	# cur.execute("SELECT exercise, reps, sets FROM plans WHERE name = %s", [plan])
+	# scheme = cur.fetchall()
+	# n = cur.execute("SELECT date, daily_result, rate FROM progress WHERE username = %s ORDER BY date DESC", [username])
+	# progress = cur.fetchall()
+	# result = []
+	# for i in range(n):
+	# 	result.append(int(progress[i]['rate']))
+	# good = result.count(1)
+	# poor = result.count(3)
+	# average = result.count(2)
+	# total = good + poor + average
+	# good = round((good/total) * 100, 2)
+	# average = round((average/total) * 100, 2)
+	# poor = round((poor/total) * 100, 2)
+	# cur.close()
+	# return render_template('memberDash.html',user = username, plan = plan, scheme = scheme, progress = progress, good = good, poor = poor, average = average)
+	# return render_template('memberDash.html',username = username)
 
 
 # @app.route('/profile/<string:username>')
@@ -785,12 +958,12 @@ class AddEquipForm(Form):
 # 	return render_template('edit_profile.html', form=form)
 
 
-# @app.route('/logout')
-# @is_logged_in
-# def logout():
-# 	session.clear()
-# 	flash('You are now logged out', 'success')
-# 	return redirect(url_for('login'))
+@app.route('/logout')
+@is_logged_in
+def logout():
+	session.clear()
+	flash('You are now logged out', 'success')
+	return redirect(url_for('login'))
 
 
 # if __name__ == "__main__":

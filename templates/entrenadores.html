@@ -1,0 +1,226 @@
+{% extends 'layout.html' %}
+
+<head>
+  <link href="https://unpkg.com/bootstrap-table@1.21.0/dist/bootstrap-table.min.css" rel="stylesheet">
+
+  <script src="https://unpkg.com/bootstrap-table@1.21.0/dist/bootstrap-table.min.js"></script>
+
+
+
+</head>
+{% block body %}
+<div class="text-white">
+  <h1 style="font-family: Georgia, serif;">Digite la Informacion del Entrenador a Ingresar</h1>
+  <div class="font-italic">
+    <form action="http://127.0.0.1:5000/entrenadores" method="post">
+
+
+      <div class="row">
+        <div class="col">
+          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Cedula</label>
+          <input type="text" class="form-control" placeholder="Cedula" name="cedula" required>
+        </div>
+        <div class="col">
+          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Nombre</label>
+          <input type="text" class="form-control" placeholder="Nombre" name="nombre" required>
+        </div>
+        <div class="col">
+          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Primer Apellido</label>
+          <input type="text" class="form-control" placeholder="Primer Apellido" name="primer_apellido" required>
+        </div>
+        <div class="col">
+          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Segundo Apellido</label>
+          <input type="text" class="form-control" placeholder="Segundo Apellido" name="segundo_apellido" required>
+        </div>
+      </div>
+
+      <div class="row">
+
+        <div class="col">
+          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">ID Salario</label>
+          <select class="custom-select my-1 mr-sm-2" name="salario" required> 
+            <option selected value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+        <div class="col">
+          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Direccion Exacta</label>
+            <div class="input-group">
+            <textarea class="form-control" aria-label="Direccion Exacta" name="direccion" required></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Correo Electronico</label>
+          <input type="email" class="form-control" placeholder="Correo Electronico" name="correo" required>
+        </div>
+
+
+      </div>
+
+
+      <div class="row">
+        <div class="col">
+          <p><input type="submit" class="btn btn-success" value="Crear Entrenador"></p>
+        </div>
+      </div>
+
+
+    </form>
+    <div class="row">
+      <div class="col">
+        <p><button id="btseleccionar" class="btn btn-secondary">Seleccionar Informacion</button></p>
+      </div>
+      <div class="col">
+        <p><button id="btactualizar" class="btn btn-primary">Actualizar Entrenador</button></p>
+      </div>
+      <div class="col">
+        <p><button id="bteliminar" class="btn btn-danger">Eliminar Entrenador</button></p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<table id="data" class="table" data-click-to-select="true" data-maintain-meta-data="true" data-toggle="table"
+  data-multiple-select-row="false" data-toolbar="#toolbar">
+  <thead>
+    <tr>
+      <th data-checkbox="true">#</th>
+      <th>Cedula</th>
+      <th>Nombre</th>
+      <th>Primer Apellido</th>
+      <th>Segundo Apellido</th>
+      <th>ID Salario</th>
+      <th>Direccion Exacta</th>
+      <th>Correo Electronico</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in data %}
+    <tr>
+      <td class="bs-checkbox " style="text-align: center; vertical-align: middle; width: 36px; "><label>
+          <input data-index="1" name="btSelectItem" type="checkbox">
+          <span></span>
+        </label></td>
+      {% for cell in row %}
+      <td>{{cell}}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+
+  $(function () {
+
+
+    $('#data').bootstrapTable('uncheckAll');
+
+    $('#btseleccionar').click(function () {
+      var test = $('#data').bootstrapTable('getSelections');
+
+      if (test.length > 0) {
+        $("input[name='cedula']").val(test[0][1]);
+        $("input[name='nombre']").val(test[0][2]);
+        $("input[name='primer_apellido']").val(test[0][3]);
+        $("input[name='segundo_apellido']").val(test[0][4]);
+        $("select[name='salario']").val(test[0][5]);
+        $("textarea[name='direccion']").val(test[0][6]);
+        $("input[name='correo']").val(test[0][7]);
+
+      } else {
+
+        alert("Seleccione un Registro de la Tabla")
+      }
+
+    })
+
+
+    $('#bteliminar').click(function () {
+      var test = $('#data').bootstrapTable('getSelections');
+
+      if (test.length > 0) {
+        $.ajax({
+          type: "DELETE",
+          url: "/entrenadores",
+          contentType: "application/json",
+          data: JSON.stringify({ 
+          cedula: $("input[name='cedula']").val() }),
+          success: function (msg) {
+            alert("Borrado Exitoso");
+            location.reload();
+          },
+          error: function(request,status,errorThrown) {
+        alert("Error: "+errorThrown);
+        location.reload();
+
+        }
+
+        })
+
+
+      } else {
+
+        alert("Seleccione un Registro de la Tabla")
+      }
+    });
+
+
+
+    $('#btactualizar').click(function () {
+      var test = $('#data').bootstrapTable('getSelections');
+
+      if (test.length > 0) {
+        $.ajax({
+          type: "PUT",
+          url: "/entrenadores",
+          contentType: "application/json",
+
+          data: JSON.stringify({
+          cedula: $("input[name='cedula']").val(),  
+          nombre: $("input[name='nombre']").val(),
+          primer_apellido:$("input[name='primer_apellido']").val(),
+          segundo_apellido:$("input[name='segundo_apellido']").val(),
+          salario:$("select[name='salario']").val(),
+          direccion:$("textarea[name='direccion']").val(),
+          correo:$("input[name='correo']").val() }),
+
+          success: function (msg) {
+            alert("Actualizacion Exitosa");
+            location.reload();
+          },
+        error: function(request,status,errorThrown) {
+          alert("Error: "+errorThrown);
+        location.reload();
+        }
+
+        })
+
+
+
+      } else {
+
+        alert("Seleccione un Registro de la Tabla");
+      }
+    });
+
+
+
+
+
+
+  });
+
+
+
+
+
+</script>
+
+{% endblock %}

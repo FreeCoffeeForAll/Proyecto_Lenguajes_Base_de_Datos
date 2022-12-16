@@ -5,7 +5,7 @@
             <img src="{{url_for('static', filename = 'ico-remove.png')}}" class="img-fluid" alt="Responsive image"     style= "height: 50px;">
           </li>
           <li class="nav-item ">
-            <a class="nav-link " href="/">Home </a>
+            <a class="nav-link " href="/">Inicio </a>
           </li>
           {% if not session.logged_in %}
           <li class="nav-item "><a class="nav-link " href="/login">Login</a></li>
@@ -25,10 +25,7 @@
               {% endif %}
             {% endif %}
           {% endif %}
-           <li class="nav-item "><a class="nav-link " href="{{url_for('profile',username = session.username)}}">Profile</a></li>
-           <li class="nav-item "><a class="nav-link " href="{{url_for('edit_profile',username = session.username)}}">Edit Profile</a></li>
-            <li class="nav-item "><a class="nav-link " href = "{{url_for('update_password', username = session.username)}}">Update password</a></li>
-          <li class="nav-item "><a class="nav-link " href="/logout">Logout</a></li>
+          <li class="nav-item "><a class="nav-link " href="/logout">Cerrar Session</a></li>
           {% endif %}
         </ul>
     </nav>
