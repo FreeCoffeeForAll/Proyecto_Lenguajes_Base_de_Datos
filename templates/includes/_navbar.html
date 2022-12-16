@@ -12,16 +12,34 @@
           {% endif %}
 
           {% if session.logged_in %}
-          {% if session.prof == 1 %}
-          <li class="nav-item "><a class="nav-link " href="/adminDash">Dashboard</a></li>
+          {% if session.prof == 3 %}
+          <li class="nav-item "><a class="nav-link " href="/administradorDash/{{session.username}}">Dashboard Administrador</a></li>
+          
+          <li class="nav-item "><a class="nav-link " href="/clientes">Clientes</a></li>
+          <li class="nav-item "><a class="nav-link " href="/entrenadores">Entrenadores</a></li>
+          <li class="nav-item "><a class="nav-link " href="/administradores">Administradores</a></li>
+          <li class="nav-item "><a class="nav-link " href="/pagos">Pagos</a></li>
+          <li class="nav-item "><a class="nav-link " href="/roles">Roles</a></li>
+          <li class="nav-item "><a class="nav-link " href="/salarios">Salarios</a></li>
+          <li class="nav-item "><a class="nav-link " href="/rutinas">Rutinas</a></li>
+          <li class="nav-item "><a class="nav-link " href="/maquinas">Maquinas</a></li>
+          <li class="nav-item "><a class="nav-link " href="/membresias">Membresias</a></li>
+
           {% else %}
-            {% if session.prof == 2 %}
+            {% if session.prof == 8 %}
               <li class="nav-item "><a class="nav-link " href="/recepDash">Dashboard</a></li>
             {% else %}
-              {% if session.prof == 3 %}
-                <li class="nav-item "><a class="nav-link " href="/trainorDash">Dashboard</a></li>
+              {% if session.prof == 2 %}
+                <li class="nav-item "><a class="nav-link " href="/entrenadorDash/{{session.username}}">Dashboard Entrenador</a></li>
+
+                <li class="nav-item "><a class="nav-link " href="/clientes">Clientes</a></li>
+                <li class="nav-item "><a class="nav-link " href="/rutinas">Rutinas</a></li>
+                <li class="nav-item "><a class="nav-link " href="/maquinas">Maquinas</a></li>
+                <li class="nav-item "><a class="nav-link " href="/membresias">Membresias</a></li>
+    
+      
               {% else %}
-                <li class="nav-item "><a class="nav-link " href="{{url_for('memberDash', username = session.username)}}">Dashboard</a></li>
+                <li class="nav-item "><a class="nav-link " href="clienteDash/{{session.username}}">Dashboard Cliente</a></li>
               {% endif %}
             {% endif %}
           {% endif %}

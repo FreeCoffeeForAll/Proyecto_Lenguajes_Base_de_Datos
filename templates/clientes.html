@@ -39,9 +39,9 @@
         <div class="col">
           <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Tipo de Membresia</label>
           <select class="custom-select my-1 mr-sm-2" name="membresia" required>
-            <option selected value="1">Oro</option>
-            <option value="2">Bronce</option>
-            <option value="3">Platino</option>
+            {% for row in data2 %}
+              <option  value={{row.NUM_MEMBRESIA}}>{{row.DESCRIPCION}}</option>
+            {% endfor %}
           </select>
         </div>
         <div class="col">

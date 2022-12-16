@@ -37,11 +37,11 @@
       <div class="row">
 
         <div class="col">
-          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">ID Salario</label>
+          <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Salario</label>
           <select class="custom-select my-1 mr-sm-2" name="salario" required>
-            <option selected value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
+            {% for row in data2 %}
+            <option  value={{row.ID_SALARIO}}>{{row.DESCRIPCION}}-₡{{row.MONTO}}</option>
+            {% endfor %}
           </select>
         </div>
         <div class="col">
